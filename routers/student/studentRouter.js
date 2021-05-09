@@ -1,13 +1,16 @@
+// packages
 const express = require("express");
 const router = new express.Router();
+const bcrypt = require("bcryptjs");
+const passport = require("passport");
+
+// Load models
 const Form = require("../../models/form");
 const path = require("path");
 const { db } = require("../../models/form");
-
-const bcrypt = require("bcryptjs");
-const passport = require("passport");
-// Load User model
 const User = require("../../models/User");
+
+// functionalities
 const {
   forwardAuthenticated,
   ensureAuthenticated,
@@ -16,15 +19,17 @@ const club = require("../../models/club");
 const clubHeadForm = require("../../models/clubHeadForm");
 const leaveApplicationForm = require("../../models/leaveApplicationForm");
 
+// history of event requests page
 router.get("/history/eventRequests", ensureAuthenticated, async (req, res) => {
   try {
     if (req.user.position !== "Student") {
       res.render("404.ejs");
     }
 
+    // fetching all forms which belong to him
     const allforms = await Form.find({ owner: req.user._id });
 
-    // await req.user.populate("forms").execPopulate();   ... .if u do this populate, u can access all forms using req.user.forms
+    // rendering the page with the forms fetched from databse
     res.render("student/history.ejs", { type: "e", user: req.user, allforms });
   } catch (e) {
     res.status(404);
@@ -32,6 +37,7 @@ router.get("/history/eventRequests", ensureAuthenticated, async (req, res) => {
   }
 });
 
+// history page for leave applciations
 router.get(
   "/history/leaveApplications",
   ensureAuthenticated,
@@ -40,9 +46,11 @@ router.get(
       if (req.user.position !== "Student") {
         res.render("404.ejs");
       }
+
+      // fetching leave applications which belong to him
       const allforms = await leaveApplicationForm.find({ owner: req.user._id });
 
-      // await req.user.populate("forms").execPopulate();   ... .if u do this populate, u can access all forms using req.user.forms
+      // render the page with those details
       res.render("student/history.ejs", {
         type: "l",
         user: req.user,
@@ -55,6 +63,7 @@ router.get(
   }
 );
 
+// history page for club head request sent by student
 router.get(
   "/history/clubHeadRequests",
   ensureAuthenticated,
@@ -63,9 +72,10 @@ router.get(
       if (req.user.position !== "Student") {
         res.render("404.ejs");
       }
+      // fetching all club head forms from databse
       const allforms = await clubHeadForm.find({ owner: req.user._id });
 
-      // await req.user.populate("forms").execPopulate();   ... .if u do this populate, u can access all forms using req.user.forms
+      // rendering the page with those details
       res.render("student/history.ejs", {
         type: "a",
         user: req.user,
@@ -78,14 +88,18 @@ router.get(
   }
 );
 
-// Club Updated Akash Dashboard
+// Dashboard for student
 router.get("/dashboard", ensureAuthenticated, (req, res) => {
   try {
     if (req.user.position !== "Student") {
       res.render("404.ejs");
     }
+
+    // data
     const clubs = req.user.clubs;
     const authClubs = req.user.authClubs;
+
+    // displaying only certain clubs
     var viewOnlyClubs = [];
     clubs.forEach((club) => {
       var flag = 0;
@@ -99,6 +113,8 @@ router.get("/dashboard", ensureAuthenticated, (req, res) => {
         viewOnlyClubs.push(club.club);
       }
     });
+
+    // rendering page with details of which club student is auth user/club member of
     res.render("student/dashboard.ejs", {
       user: req.user,
       approved: req.user.approved,
@@ -112,14 +128,18 @@ router.get("/dashboard", ensureAuthenticated, (req, res) => {
   }
 });
 
-//for joining clubs student side
+//for joining clubs on student side
 router.get("/joinClubs", ensureAuthenticated, async (req, res) => {
   try {
     if (req.user.position !== "Student") {
       res.render("404.ejs");
     }
+
+    // data
     const clubs = req.user.clubs;
     const authClubs = req.user.authClubs;
+
+    // storing in the view only clubs array
     var viewOnlyClubs = [];
     clubs.forEach((club) => {
       var flag = 0;
@@ -134,8 +154,10 @@ router.get("/joinClubs", ensureAuthenticated, async (req, res) => {
       }
     });
 
+    // fetch all clubs
     const allclubs = await club.find();
 
+    // new clubs which the student is not a part of
     var newClubs = [];
     allclubs.forEach((allclub) => {
       var flag = 0;
@@ -150,6 +172,7 @@ router.get("/joinClubs", ensureAuthenticated, async (req, res) => {
       }
     });
 
+    // rendering the page with fetched details
     res.render("student/viewClubs", {
       user: req.user,
       newClubs,
@@ -162,7 +185,7 @@ router.get("/joinClubs", ensureAuthenticated, async (req, res) => {
   }
 });
 
-//for clubs so new
+// route for clubactivity
 router.get(
   "/joinClubs/:club/clubActivity",
   ensureAuthenticated,
@@ -171,12 +194,14 @@ router.get(
       if (req.user.position !== "Student") {
         res.render("404.ejs");
       }
+
+      // data
       const clubName = req.params.club;
-      // console.log(clubName)
 
+      // finding the club with the given club name
       const form = await club.findOne({ clubName: clubName });
-      // console.log(form1)
 
+      // status of the members
       var status;
       if (form.members.includes(req.user.name)) {
         status = 1;
@@ -187,6 +212,7 @@ router.get(
         status = 0;
       }
 
+      // rendering page
       res.render("student/clubActivityPage.ejs", {
         user: req.user,
         form: form,
@@ -200,6 +226,7 @@ router.get(
   }
 );
 
+// member ship form page route
 router.get(
   "/joinClubs/:club/membershipForm",
   ensureAuthenticated,
@@ -207,6 +234,8 @@ router.get(
     if (req.user.position !== "Student") {
       res.render("404.ejs");
     }
+
+    // data
     const clubName = req.params.club;
     var teacherRejected;
     var rejectedMsg = "";
@@ -215,44 +244,45 @@ router.get(
     var status;
 
     try {
+      // finding the club with the given club name
       form1 = await club.findOne({ clubName: clubName });
-      // console.log(form1)
 
-      // form2 will have club members and authority users
-      // authority users will be second choice
+      // findin the club head form with the user details and the club selected
       form2 = await clubHeadForm.find({
         owner: req.user.id,
         clubselected: clubName,
       });
 
+      // setting proper statuses for proper conditions
       if (form2.length == 0) {
         status = 0;
       }
+
       if (form1.members.includes(req.user.name)) {
         status = 1;
       }
+
       if (form1.clubHeads.includes(req.user.name)) {
         status = 2;
       }
+
       if (form2.length != 0) {
         var last = form2.length - 1;
+
         if (form2[last].memberStatus == 200) {
           status = form2[last].memberStatus;
         }
+
         if (form2[last].memberStatus == 100) {
           status = form2[0].memberStatus;
-          // teacherRejected = form2[0].teacherrejected;
-          // rejectedMsg = form2[0].rejectedmessage;
         }
+
         status = form2[last].memberStatus;
         teacherRejected = form2[last].teacherrejected;
         rejectedMsg = form2[last].rejectedmessage;
       }
 
-      // console.log(form2.length)
-      // console.log(status)
-      // console.log("Second Form")
-      // console.log(form2);
+      // rendering page
       res.render("student/membershipForm.ejs", {
         user: req.user,
         form1: form1,
@@ -268,6 +298,7 @@ router.get(
   }
 );
 
+// post request for club membership form
 router.post(
   "/:club/saveMembershipForm",
   ensureAuthenticated,
@@ -275,19 +306,20 @@ router.post(
     if (req.user.position !== "Student") {
       res.render("404.ejs");
     }
-    // console.log(clubHeadFormData)
     try {
       const clubName = req.params.club;
-      // console.log(clubName)
 
+      // creating new club head form
       const clubHeadFormData = new clubHeadForm({
         ...req.body,
         clubselected: clubName,
         owner: req.user._id,
       });
 
+      // saving the form into database
       await clubHeadFormData.save();
 
+      // update according to the position selected
       if (req.body.clubposition == "Authority User") {
         await clubHeadFormData.updateOne({ $set: { memberStatus: 200 } });
       } else {
@@ -295,6 +327,8 @@ router.post(
       }
 
       res.status(201);
+
+      // rendering the page for animation
       res.render("student/afterAnimation.hbs");
     } catch (e) {
       res.status(400);
