@@ -1,18 +1,20 @@
+// packages
 const express = require("express");
 const router = express.Router();
+
 // Load models
 const User = require("../../models/User");
-const Form = require("../../models/form");
-const clubHeadForm = require("../../models/clubHeadForm");
-const {
-  ensureAuthenticated,
-  forwardAuthenticated,
-} = require("../../config/auth");
-const { findById } = require("../../models/form");
 const club = require("../../models/club");
 const teacherHeadForm = require("../../models/teacherHeadForm");
 const Report = require("../../models/report");
 
+// functionalities
+const {
+  ensureAuthenticated,
+  forwardAuthenticated,
+} = require("../../config/auth");
+
+// Route to send request to be teacher coordinator => sending this to admin
 router.get("/requestforadmin", async (req, res) => {
   if (req.user.position !== "Teacher") {
     res.render("404.ejs");
@@ -22,28 +24,32 @@ router.get("/requestforadmin", async (req, res) => {
   res.redirect("/teacherdashboard");
 });
 
+// teacher dashboard route
 router.get("/teacherdashboard", ensureAuthenticated, async (req, res) => {
   if (req.user.position !== "Teacher") {
     res.render("404.ejs");
   }
-  // const form = await teacherHeadForm.findOne({owner :req.user._id})
-  //status is teacherHead for particular club
+
+  // rendering subadmin dashboard page
   res.render("subadmin/teacherdashboard.ejs", {
     user: req.user,
-    // status: form.teacherStatus,
     approved: req.user.approved,
     authClubs: req.user.authClubs,
   });
 });
 
-//for becoming guardian clubs teacher side
+//for becoming guardian of a club =>  teacher side
 router.get("/clubGuardian", ensureAuthenticated, async (req, res) => {
   try {
     if (req.user.position !== "Teacher") {
       res.render("404.ejs");
     }
+
+    // data
     const allclubs = await club.find();
     const authClubs = req.user.authClubs;
+
+    // non auth clubs
     var newClubs = [];
     allclubs.forEach((allclub) => {
       var flag = 0;
@@ -58,6 +64,7 @@ router.get("/clubGuardian", ensureAuthenticated, async (req, res) => {
       }
     });
 
+    // rendering subadmin page
     res.render("subadmin/viewClubGuardian", {
       user: req.user,
       authClubs: req.user.authClubs,
@@ -78,10 +85,14 @@ router.get(
       if (req.user.position !== "Teacher") {
         res.render("404.ejs");
       }
+
+      // data
       const clubName = req.params.club;
 
+      // finding the form from database that has this particular clubname
       const form = await club.findOne({ clubName: clubName });
-      // console.log(form)
+
+      // if that teacher is a teacherHead of that club
       var status = 0;
       if (form.teacherHeads.includes(req.user.name)) {
         status = 1;
@@ -89,6 +100,7 @@ router.get(
         status = 0;
       }
 
+      // rendering club activity page
       res.render("subadmin/clubActivityPage", {
         user: req.user,
         clubName: clubName,
@@ -101,6 +113,7 @@ router.get(
   }
 );
 
+// join club page for subadmin => form for being club guardian
 router.get(
   "/joinClubs/:club/clubGuardianForm",
   ensureAuthenticated,
@@ -109,17 +122,18 @@ router.get(
       if (req.user.position !== "Teacher") {
         res.render("404.ejs");
       }
+      // data
       const clubName = req.params.club;
+
+      // database queries
       const form = await club.findOne({ clubName: clubName });
       const form2 = await teacherHeadForm.findOne({
         owner: req.user.id,
         clubSelected: clubName,
       });
+
+      // setting proper status
       var status;
-      // var rejectedMsg;
-      // console.log("Owner : " +req.user.id)
-      // console.log("ClubName : " +clubName)
-      // console.log(form2);
 
       if (form2 == null) {
         status = 0;
@@ -132,8 +146,7 @@ router.get(
         status = 1;
       }
 
-      // console.log(status)
-      // console.log(rejectedMsg)
+      // redering page
       res.render("subadmin/clubGuardianForm.ejs", {
         user: req.user,
         clubName: clubName,
@@ -147,6 +160,7 @@ router.get(
   }
 );
 
+// post request for saving club uardian form in database
 router.post(
   "/:club/saveClubGuardianForm",
   ensureAuthenticated,
@@ -155,18 +169,24 @@ router.post(
       if (req.user.position !== "Teacher") {
         res.render("404.ejs");
       }
+
+      // data
       const clubName = req.params.club;
-      // console.log(clubName)
+
+      // creating new form model
       const form2 = new teacherHeadForm({
         clubSelected: clubName,
         owner: req.user._id,
       });
 
+      // saving form in database
       await form2.save();
+
+      // upadate teacher status
       await form2.updateOne({ $set: { teacherStatus: 100 } });
-      // console.log(form2)
 
       res.status(201);
+      // redering page
       res.render("subadmin/afterAnimation.hbs");
     } catch (e) {
       res.status(400, e);
@@ -174,15 +194,21 @@ router.post(
   }
 );
 
+// generating report route
 router.get(
   "/teacherdashboard/:clubName/clubeventdetails/:eventName/report",
   ensureAuthenticated,
   async (req, res) => {
+    // data
     var clubName = req.params.clubName;
+    const eventName = req.params.eventName;
+
+    // finding that particular club
     const clubReq = await club.findOne({
       clubName,
     });
-    const eventName = req.params.eventName;
+
+    // rendering page with the details
     res.render("subadmin/club/clubEventReport", {
       user: req.user,
       club: clubReq,
@@ -191,10 +217,12 @@ router.get(
   }
 );
 
+// saving report route
 router.post("/saveReport", async (req, res) => {
   try {
     console.log(req.body);
 
+    // data
     const elements = req.body.name.length;
 
     const {

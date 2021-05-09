@@ -1,30 +1,34 @@
+// packages
 const express = require("express");
 const router = express.Router();
-// Load User model
+// Load Models
 const User = require("../../../models/User");
 const Form = require("../../../models/form");
+const club = require("../../../models/club");
 const clubHeadForm = require("../../../models/clubHeadForm");
+
+// functionalities
 const {
   ensureAuthenticated,
   forwardAuthenticated,
 } = require("../../../config/auth");
-const { findById } = require("../../../models/form");
-const club = require("../../../models/club");
 const { sendEmail } = require("../../../common_functionalities/MailSender");
 const { Console } = require("console");
 
-//for authority user
+// for authority user => submit rejected reason post route
 router.post("/submitReasonClubHeads", async (req, res) => {
   if (req.user.position !== "Teacher") {
     res.render("404.ejs");
   }
+
+  // finding that form and then updating the information of rejected message
   await clubHeadForm.findByIdAndUpdate(req.body.id, {
     rejectedmessage: req.body.message,
   });
   res.status(200).send();
 });
 
-// my activity so club included
+// teacher side => club head forms => filtering included
 router.get(
   "/teacherdashboard/:club/clubHeadForms/:filter",
   ensureAuthenticated,
@@ -33,9 +37,13 @@ router.get(
       if (req.user.position !== "Teacher") {
         res.render("404.ejs");
       }
+
+      // data
       const filter = req.params.filter;
       const teacherName = req.user.name;
       const clubName = req.params.club;
+
+      // fetching the club head form from database
       const allforms = await clubHeadForm.find({
         $and: [
           {
@@ -46,10 +54,8 @@ router.get(
           },
         ],
       });
-      // console.log(filter)
-      // console.log(clubName)
-      // console.log(allforms)
 
+      // filtering for approved forms
       if (filter == "approved") {
         const approvedforms = allforms.filter((form) => {
           if (form.memberStatus === 1 || form.memberStatus === 2) {
@@ -57,6 +63,7 @@ router.get(
           } else return false;
         });
 
+        // storing in approved forms array
         var approvedForms = [];
         for (var i = 0; i < approvedforms.length; i++) {
           var ownerName = await User.findById({
@@ -68,6 +75,7 @@ router.get(
           });
         }
 
+        // rendering the page with details
         res.render("subadmin/teacherHeadRequest", {
           user: req.user,
           allforms: approvedForms,
@@ -75,15 +83,15 @@ router.get(
         });
       }
 
+      // filtering for pending forms
       if (filter == "pending") {
         const pendingforms = allforms.filter((form) => {
-          //100 -> member request is sent
-          //200 -> authority request is sent
           if (form.memberStatus === 100 || form.memberStatus == 200) {
             return true;
           } else return false;
         });
 
+        // storing in pending forms array
         var pendingForms = [];
         for (var i = 0; i < pendingforms.length; i++) {
           var ownerName = await User.findById({
@@ -94,8 +102,8 @@ router.get(
             ownerName: ownerName.name,
           });
         }
-        // console.log("Pending : "+ pendingForms)
 
+        // rendering
         res.render("subadmin/teacherHeadRequest", {
           user: req.user,
           allforms: pendingForms,
@@ -103,6 +111,7 @@ router.get(
         });
       }
 
+      // filtering for rejected forms
       if (filter == "rejected") {
         const rejectedforms = allforms.filter((form) => {
           if (form.memberStatus === -1 || form.memberStatus === -2) {
@@ -110,6 +119,7 @@ router.get(
           } else return false;
         });
 
+        // storing in rejected forms array
         var rejectedForms = [];
         for (var i = 0; i < rejectedforms.length; i++) {
           var ownerName = await User.findById({
@@ -121,6 +131,7 @@ router.get(
           });
         }
 
+        // rendering page
         res.render("subadmin/teacherHeadRequest", {
           user: req.user,
           allforms: rejectedForms,
@@ -128,7 +139,9 @@ router.get(
         });
       }
 
+      // filtering for all types of forms
       if (filter == "all") {
+        // storing all forms in the array so that we can pass it on to the frontend
         var allForms = [];
         for (var i = 0; i < allforms.length; i++) {
           var ownerName = await User.findById({
@@ -139,6 +152,8 @@ router.get(
             ownerName: ownerName.name,
           });
         }
+
+        // rendering page with all forms
         res.render("subadmin/teacherHeadRequest", {
           user: req.user,
           allforms: allForms,
@@ -148,114 +163,6 @@ router.get(
     } catch (e) {
       res.status(404);
       console.log("Error: ", e);
-    }
-  }
-);
-
-router.get(
-  "/teacherdashboard/clubHeadForms/:filter",
-  ensureAuthenticated,
-  async (req, res) => {
-    try {
-      if (req.user.position !== "Teacher") {
-        res.render("404.ejs");
-      }
-      const filter = req.params.filter;
-      const teachername = req.user.name;
-      const allforms = await clubHeadForm.find({
-        teacherselected: teachername,
-      });
-
-      if (filter == "approved") {
-        const approvedforms = allforms.filter((form) => {
-          if (form.status === "approved") {
-            return true;
-          } else return false;
-        });
-
-        // var approvedForms = []
-        for (var i = 0; i < approvedforms.length; i++) {
-          var ownerName = await User.findById({
-            _id: approvedforms[i].owner,
-          });
-          approvedForms.push({
-            ...approvedforms[i]._doc,
-            ownerName: ownerName.name,
-          });
-        }
-
-        res.render("subadmin/teacherHeadRequest", {
-          user: req.user,
-          allforms: approvedForms,
-        });
-      }
-
-      if (filter == "pending") {
-        const pendingforms = allforms.filter((form) => {
-          if (form.status === "pending") {
-            return true;
-          } else return false;
-        });
-
-        var pendingForms = [];
-        for (var i = 0; i < pendingforms.length; i++) {
-          var ownerName = await User.findById({
-            _id: pendingforms[i].owner,
-          });
-          pendingForms.push({
-            ...pendingforms[i]._doc,
-            ownerName: ownerName.name,
-          });
-        }
-
-        res.render("subadmin/teacherHeadRequest", {
-          user: req.user,
-          allforms: pendingForms,
-        });
-      }
-
-      if (filter == "rejected") {
-        const rejectedforms = allforms.filter((form) => {
-          if (form.status === "rejected") {
-            return true;
-          } else return false;
-        });
-
-        var rejectedForms = [];
-        for (var i = 0; i < rejectedforms.length; i++) {
-          var ownerName = await User.findById({
-            _id: rejectedforms[i].owner,
-          });
-          rejectedForms.push({
-            ...rejectedforms[i]._doc,
-            ownerName: ownerName.name,
-          });
-        }
-
-        res.render("subadmin/teacherHeadRequest", {
-          user: req.user,
-          allforms: rejectedForms,
-        });
-      }
-
-      if (filter == "all") {
-        var allForms = [];
-        for (var i = 0; i < allforms.length; i++) {
-          var ownerName = await User.findById({
-            _id: allforms[i].owner,
-          });
-          allForms.push({
-            ...allforms[i]._doc,
-            ownerName: ownerName.name,
-          });
-        }
-        res.render("subadmin/teacherHeadRequest", {
-          user: req.user,
-          allforms: allForms,
-        });
-      }
-    } catch (e) {
-      res.status(404).send("error");
     }
   }
 );
@@ -272,22 +179,22 @@ router.get(
       const _id = req.params.id;
       // _id is of form selected
 
-      //---------akash---------------//
-      //for update in clubHeadForm
+      // for update in clubHeadForm
       var clubName;
       var form3 = await clubHeadForm.findById(_id);
       var status = form3.memberStatus;
 
       //find the name of owner
       const owner = await User.findById(form3.owner);
-      // console.log(ownerName)
-      // console.log(ownerName.name)
+
+      // checking the status of the user
       if (form3.clubposition == "Club Member") {
         status = 1;
       } else if (form3.clubposition == "Authority User") {
         status = 2;
       }
 
+      // finding the club head form  and then updating it with teachers who have approved it
       form3 = await clubHeadForm.findByIdAndUpdate(
         _id,
         {
@@ -298,12 +205,13 @@ router.get(
       );
 
       clubName = form3.clubselected;
-      // console.log(form3)
 
       //for update in club collection
       var form2 = await club.findOne({
         clubName: clubName,
       });
+
+      // checking status if club member
       if (form3.clubposition == "Club Member" && form3.memberStatus == 1) {
         form2 = await club.findOneAndUpdate(
           {
@@ -323,6 +231,9 @@ router.get(
         owner.clubs = owner.clubs.concat({ club: clubName });
         await owner.save();
       }
+
+      // checking status if authority user
+
       if (form3.clubposition == "Authority User" && form3.memberStatus == 2) {
         form2 = await club.findOneAndUpdate(
           {
@@ -342,10 +253,9 @@ router.get(
         owner.authClubs = owner.authClubs.concat({ authClub: clubName });
         await owner.save();
       }
-      // console.log(form2)
+
       console.log(owner);
 
-      //---------akash---------------//
       //to send mail
       var email = owner.email;
       var emailbody =
@@ -353,6 +263,7 @@ router.get(
         clubName.toString();
       sendEmail(email, "Authorised", emailbody);
 
+      // rendering page
       res.render("subadmin/afterapproved.hbs", {
         redirectURL: `/teacherdashboard/${clubName}/clubHeadForms/pending`,
       });
@@ -360,27 +271,10 @@ router.get(
       res.status(500);
       console.log("Error : " + e);
     }
-
-    // const form = await clubHeadForm.findByIdAndUpdate(
-    //   _id,
-    //   {$set: { status: "approved" }},
-    //   { new: true, runValidators: true }
-    // );
-
-    // console.log(form.clubselected)
-
-    // const newClub = { authClub: form.clubselected}
-    // const user = await User.findByIdAndUpdate(
-    //   form.owner,
-    //   {$set: { adminStatus: 1},
-    //   $push: { authClubs: newClub}},
-    //   { new: true, runValidators: true }
-    // )
-
-    // console.log(user)
   }
 );
 
+// head request rejection
 router.get(
   "/approveHeadReq/:id/rejected",
   ensureAuthenticated,
@@ -391,20 +285,22 @@ router.get(
         res.render("404.ejs");
       }
 
-      // _id is of form selected
       var clubName;
 
-      //---------akash---------------//
-      //for update in clubHeadForm
+      // for update in clubHeadForm
       var form3 = await clubHeadForm.findByIdAndUpdate(_id);
       var status = form3.memberStatus;
+
       clubName = form3.clubselected;
+
+      // when status is club member
       if (form3.clubposition == "Club Member") {
         status = -1;
       } else if (form3.clubposition == "Authority User") {
         status = -2;
       }
 
+      // finding the club had form and then updating it
       form3 = await clubHeadForm.findByIdAndUpdate(
         _id,
         {
@@ -413,15 +309,12 @@ router.get(
         },
         { new: true, runValidators: true }
       );
-
-      // console.log(form3)
-      //---------akash---------------//
     } catch (e) {
       res.status(404);
       console.log("Error : " + e);
     }
 
-    // console.log(user)
+    // rendering the page
     res.render("subadmin/afterrejected.hbs", {
       formID: _id.toString(),
       redirectURL: `/teacherdashboard/${clubName}/clubHeadForms/pending`,
