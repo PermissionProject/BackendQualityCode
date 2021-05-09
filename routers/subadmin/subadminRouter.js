@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-// Load User model
+// Load models
 const User = require("../../models/User");
 const Form = require("../../models/form");
 const clubHeadForm = require("../../models/clubHeadForm");
@@ -11,7 +11,7 @@ const {
 const { findById } = require("../../models/form");
 const club = require("../../models/club");
 const teacherHeadForm = require("../../models/teacherHeadForm");
-const Report = require("../../models/report")
+const Report = require("../../models/report");
 
 router.get("/requestforadmin", async (req, res) => {
   if (req.user.position !== "Teacher") {
@@ -182,61 +182,73 @@ router.get(
     const clubReq = await club.findOne({
       clubName,
     });
-    const eventName = req.params.eventName
-    res.render("subadmin/club/clubEventReport",
-      {
-        user: req.user,
-        club: clubReq,
-        event: eventName
-      }  
-    )
-});
-
+    const eventName = req.params.eventName;
+    res.render("subadmin/club/clubEventReport", {
+      user: req.user,
+      club: clubReq,
+      event: eventName,
+    });
+  }
+);
 
 router.post("/saveReport", async (req, res) => {
-  try { 
+  try {
+    console.log(req.body);
 
-    console.log(req.body)
-    
-    
+    const elements = req.body.name.length;
 
-    const elements=req.body.name.length;
+    const {
+      eventName,
+      eventCoordinator,
+      organizedBy,
+      techRegistrations,
+      nontechRegistrations,
+      description,
+      eventStartDate,
+      eventEndDate,
+      eventParticipants,
+      name,
+      winners,
+      participants,
+      startDate,
+      endDate,
+    } = req.body;
 
-    const {eventName,eventCoordinator,organizedBy,techRegistrations,
-    nontechRegistrations,description,eventStartDate,eventEndDate,eventParticipants
-    ,name,winners,participants,startDate,endDate}=req.body;
-    
-    const subevent=[]
-    for(var i=0;i<elements;i++)
-    {
-        var obj={
-          name:name[i],
-          winners:winners[i],
-          participants:participants[i],
-          startDate:startDate[i],
-          endDate:endDate[i]
-        }
-        subevent.push(obj)
+    const subevent = [];
+    for (var i = 0; i < elements; i++) {
+      var obj = {
+        name: name[i],
+        winners: winners[i],
+        participants: participants[i],
+        startDate: startDate[i],
+        endDate: endDate[i],
+      };
+      subevent.push(obj);
     }
 
-    const formdata=new Report({
-      eventName,eventCoordinator,organizedBy,techRegistrations,
-      nontechRegistrations,description,eventStartDate,eventEndDate,eventParticipants,
-      subevents:subevent,
-      owner:req.user._id
-    })
+    const formdata = new Report({
+      eventName,
+      eventCoordinator,
+      organizedBy,
+      techRegistrations,
+      nontechRegistrations,
+      description,
+      eventStartDate,
+      eventEndDate,
+      eventParticipants,
+      subevents: subevent,
+      owner: req.user._id,
+    });
 
-    console.log(formdata)
-    
-   await formdata.save();
+    console.log(formdata);
+
+    await formdata.save();
     res.status(201);
     res.render("saveForm.hbs");
-  } 
-  catch (e) {
+  } catch (e) {
     res.status(400);
     console.log("Error: ", e);
   }
 });
-
 
 module.exports = router;

@@ -1,25 +1,32 @@
+// packages
 const express = require("express");
 const router = express.Router();
-const { sendEmail } = require("../../../common_functionalities/MailSender");
 
-const User = require("../../../models/User");
+// Models
 const leaveApplicationForm = require("../../../models/leaveApplicationForm");
+const User = require("../../../models/User");
+
+// functionalities
+const { sendEmail } = require("../../../common_functionalities/MailSender");
 const {
   ensureAuthenticated,
   forwardAuthenticated,
 } = require("../../../config/auth");
 
-//for authority user
+// Leave Application Reason post route
 router.post("/submitLeaveReason", async (req, res) => {
   if (req.user.position !== "Teacher") {
     res.render("404.ejs");
   }
+
+  // finding the application form in database - if found, update it
   await leaveApplicationForm.findByIdAndUpdate(req.body.id, {
     rejectedmessage: req.body.message,
   });
   res.status(200).send();
 });
 
+// Displaying leave applications on teacher side
 router.get(
   "/teacherdashboard/leaveApplications/:filter",
   ensureAuthenticated,
@@ -28,12 +35,17 @@ router.get(
       if (req.user.position !== "Teacher") {
         res.render("404.ejs");
       }
+
+      // data
       const filter = req.params.filter;
       const teachername = req.user.name;
+
+      // finding leave Application form which are assigned to that particular teacher
       const allforms = await leaveApplicationForm.find({
         teacherselected: teachername,
       });
 
+      // filtering for the nav bar
       if (filter == "approved") {
         const approvedforms = allforms.filter((form) => {
           if (form.status === "approved") {
@@ -41,6 +53,7 @@ router.get(
           } else return false;
         });
 
+        // storing all approved forms in an array
         var approvedForms = [];
         for (var i = 0; i < approvedforms.length; i++) {
           var ownerName = await User.findById({ _id: approvedforms[i].owner });
@@ -50,11 +63,14 @@ router.get(
           });
         }
 
+        // rendering the page by passing all approved forms
         res.render("subadmin/teacherLeaveForms", {
           user: req.user,
           allforms: approvedForms,
         });
       }
+
+      // when status is pending => when user wants all pending forms
 
       if (filter == "pending") {
         const pendingforms = allforms.filter((form) => {
@@ -63,6 +79,7 @@ router.get(
           } else return false;
         });
 
+        // storing pending forms in the array
         var pendingForms = [];
         for (var i = 0; i < pendingforms.length; i++) {
           var ownerName = await User.findById({ _id: pendingforms[i].owner });
@@ -72,6 +89,7 @@ router.get(
           });
         }
 
+        // rendering the page by passing all pending forms
         res.render("subadmin/teacherLeaveForms", {
           user: req.user,
           allforms: pendingForms,
@@ -85,6 +103,7 @@ router.get(
           } else return false;
         });
 
+        // storing rejected forms in the array
         var rejectedForms = [];
         for (var i = 0; i < rejectedforms.length; i++) {
           var ownerName = await User.findById({ _id: rejectedforms[i].owner });
@@ -94,12 +113,14 @@ router.get(
           });
         }
 
+        // rendering the page by passing all pending forms
         res.render("subadmin/teacherLeaveForms", {
           user: req.user,
           allforms: rejectedForms,
         });
       }
 
+      // if user wants to see all types of forms
       if (filter == "all") {
         var allForms = [];
         for (var i = 0; i < allforms.length; i++) {
@@ -109,6 +130,8 @@ router.get(
             ownerName: ownerName.name,
           });
         }
+
+        // rendering the page
         res.render("subadmin/teacherLeaveForms", {
           user: req.user,
           allforms: allForms,
@@ -128,20 +151,18 @@ router.get("/approveLeaveReq/:id", ensureAuthenticated, async (req, res) => {
       res.render("404.ejs");
     }
 
+    // data
     const teachername = req.user.name;
-
     const _id = req.params.id;
-    // console.log(_id);
+
+    // finding that form
     const form = await leaveApplicationForm.findById(_id);
-
     const ownerid = form.owner;
-    // console.log(ownerid);
 
+    // finding the user credentials
     const ownercred = await User.findById(ownerid);
-    // console.log(ownercred);
 
-    // console.log(form);
-
+    // data
     var sdate = form.datefrom;
     var sday = String(sdate.getDate()).padStart(2, "0");
     var smonth = String(sdate.getMonth() + 1).padStart(2, "0");
@@ -152,6 +173,7 @@ router.get("/approveLeaveReq/:id", ensureAuthenticated, async (req, res) => {
     var emonth = String(edate.getMonth() + 1).padStart(2, "0");
     var eyear = edate.getFullYear();
 
+    // diabling the buttons
     var disabled = "no";
     for (var i = 0; i < form.teacherapproved.length; i = i + 1) {
       if (form.teacherapproved[i] == teachername) {
@@ -159,12 +181,14 @@ router.get("/approveLeaveReq/:id", ensureAuthenticated, async (req, res) => {
       }
     }
 
+    // diabling the buttons
     for (var i = 0; i < form.teacherrejected.length; i = i + 1) {
       if (form.teacherrejected[i] == teachername) {
         disabled = "yes";
       }
     }
 
+    // rendering the page with proper data
     res.render("subadmin/openLeaveForm.ejs", {
       user: req.user,
       form,
@@ -193,10 +217,13 @@ router.get(
       if (req.user.position !== "Teacher") {
         res.render("404.ejs");
       }
-      const teachername = req.params.teacherName;
-      const _id = req.params.id;
-      // _id is of form selected
 
+      // data
+      const teachername = req.params.teacherName;
+      // _id is of form selected
+      const _id = req.params.id;
+
+      // finding leave application form from database and then updating
       const form = await leaveApplicationForm.findByIdAndUpdate(
         _id,
         { $push: { teacherapproved: teachername } },
@@ -210,7 +237,8 @@ router.get(
           { runValidators: true }
         );
       }
-      //send mail
+
+      //sending mail
       const owner = await User.findById(form.owner);
       var email = owner.email;
       var emailbody =
@@ -229,7 +257,7 @@ router.get(
   }
 );
 
-// after teacher clicking on reject for event requests
+// after teacher clicks on reject for event requests
 router.get(
   "/approveLeaveReq/:id/rejected/:teacherName",
   ensureAuthenticated,
@@ -238,10 +266,13 @@ router.get(
       if (req.user.position !== "Teacher") {
         res.render("404.ejs");
       }
-      const teachername = req.params.teacherName;
-      const _id = req.params.id;
-      // _id is of form selected
 
+      //data
+      const teachername = req.params.teacherName;
+      // _id is of form selected
+      const _id = req.params.id;
+
+      // finding the leave application form and then updating status to rejected
       const form = await leaveApplicationForm.findByIdAndUpdate(
         _id,
         {
@@ -251,6 +282,7 @@ router.get(
         { new: true, runValidators: true }
       );
 
+      // rendering the page with proper details
       res.render("subadmin/afterrejected.hbs", {
         formID: _id.toString(),
         redirectURL: "/teacherdashboard/leaveApplications/pending",
