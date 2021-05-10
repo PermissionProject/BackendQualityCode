@@ -1,18 +1,24 @@
 const express = require("express");
-// const expressLayouts = require("express-ejs-layouts");
+require("./db/mongoose");
+
 const path = require("path");
+
+//packages
 const passport = require("passport");
 const flash = require("connect-flash");
 const session = require("express-session");
+var bodyParser = require("body-parser");
 const hbs = require("hbs");
 const ejs = require("ejs");
-require("./db/mongoose");
+var compression = require("compression");
+
+//models
 const mongoose = require("mongoose");
 const Form = require("./models/form");
-var bodyParser = require("body-parser");
+
+//Rroutes
 const formRouter = require("./routers/form/formRouter");
 const studentRouter = require("./routers/student/studentRouter");
-var compression = require("compression");
 
 //subadmin routes
 const subadminRouter = require("./routers/subadmin/subadminRouter");
@@ -33,18 +39,19 @@ const port = process.env.PORT;
 // Passport Config
 require("./config/passport")(passport);
 
+// setting directory paths
 const publicDirectoryPath = path.join(__dirname, "./public");
 const viewsPath = path.join(__dirname, "./templates/views/");
 
-// ejs hbs
-// app.use(expressLayouts);
+//  setting viewsPath  ejs hbs
 app.set("view engine", "hbs");
 app.set("view engine", "ejs");
-
 app.set("views", viewsPath);
-
 app.use(express.static(publicDirectoryPath));
-app.use(compression()); //use compression
+
+//use compression
+app.use(compression());
+
 //body parser
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -83,34 +90,25 @@ app.use("/loginActivity", require("./routers/LoginActivity.js"));
 
 app.use(formRouter);
 app.use(studentRouter);
-
 app.use(adminRouter);
 app.use(excelsheet);
 app.use(reportsheet);
 app.use(userAuthRequestsRouter);
 app.use(subadminRequestsRouter);
-
 app.use(subadminRouter);
 app.use(authorityUserRequestsRouter);
 app.use(eventRequestsRouter);
 app.use(leaveApplicationsRouter);
 
-// CORS
+// CORS handling for all request
 app.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
   res.header("Access-Control-Allow-Headers", "Content-Type");
-
   next();
 });
 
-// app.use(function (req, res) {
-//   res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
-//   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS, PUT , PATCH , DELETE");
-
-//   res.header("Access-Control-Allow-Headers", "Content-Type");
-// });
-
+//starting the server
 app.listen(port, () => {
   console.log("Server listening on port ", port);
 });

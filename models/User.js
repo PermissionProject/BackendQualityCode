@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 
+// User Modal Schema
+
 const UserSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -62,12 +64,4 @@ UserSchema.virtual("forms", {
 // in form model the owner field associates every form with the owner user
 
 const User = mongoose.model("User", UserSchema, "usersCollection");
-
-// User.findByIdAndUpdate("5fe4211201b70719823fc627", {
-//   clubs:[{ club: "PASC"}, {club: "DEBSOC"}, {club: "PICT EDC"}]
-//   },
-// {new: true, runValidators: true}, (err, res) =>{
-//   console.log(res)
-// })
-
 module.exports = User;

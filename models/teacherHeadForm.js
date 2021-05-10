@@ -1,22 +1,23 @@
 const mongoose = require("mongoose");
-const User = require("./User");
+
+// Modal TeacherForm Schema
 
 const teacherHeadSchema = mongoose.Schema({
     dateforrequest: {
         type: Date,
         default: Date.now,
     },
-    clubSelected:{
+    clubSelected: {
         type: String,
         required: true
     },
-    teacherStatus:{
-        type : Number,
-        default : 0,
+    teacherStatus: {
+        type: Number,
+        default: 0,
     },
-    rejectedMessage:{
+    rejectedMessage: {
         type: String,
-        default : "None"
+        default: "None"
     },
     owner: {
         type: mongoose.Schema.Types.ObjectId,
@@ -31,6 +32,6 @@ const teacherHeadSchema = mongoose.Schema({
 //  1 - guardian
 // -1 - rejected guardian
 
-const teacherHeadForm = mongoose.model("teacherHeadForm", teacherHeadSchema ,"teacherHeadsCollection");
+const teacherHeadForm = mongoose.model("teacherHeadForm", teacherHeadSchema, "teacherHeadsCollection");
 
 module.exports = teacherHeadForm;

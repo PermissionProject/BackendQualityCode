@@ -1,15 +1,17 @@
 const mongoose = require("mongoose");
 
+// leaveForm ModalSchema
+
 const leaveFormSchema = new mongoose.Schema({
-  reason:{
+  reason: {
     type: String,
     required: true
   },
-  illness:{
-      type: String,
-      required: false
+  illness: {
+    type: String,
+    required: false
   },
-  clubselected:{
+  clubselected: {
     type: String,
     required: false
   },
@@ -17,15 +19,15 @@ const leaveFormSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
-  otherDescription:{
-    type:String,
-    required:false
+  otherDescription: {
+    type: String,
+    required: false
   },
-  datefrom:{
+  datefrom: {
     type: Date,
-    required:true
+    required: true
   },
-  dateto:{
+  dateto: {
     type: Date,
     required: true
   },
@@ -33,21 +35,21 @@ const leaveFormSchema = new mongoose.Schema({
     type: "array",
     required: true,
   },
-  teacherapproved:{
+  teacherapproved: {
     type: "array",
     required: false
   },
-  teacherrejected:{
+  teacherrejected: {
     type: "array",
     required: false
-  },    
-  rejectedmessage:{
+  },
+  rejectedmessage: {
     type: String,
     required: false
   },
-  status:{
-      type: String,
-      default: "pending"
+  status: {
+    type: String,
+    default: "pending"
   },
   owner: {
     type: mongoose.Schema.Types.ObjectId,

@@ -1,41 +1,39 @@
 const mongoose = require("mongoose");
-const User = require("./User");
+
+// club Head Form ModalSchema
 
 const clubHeadFormSchema = mongoose.Schema({
     dateforrequest: {
         type: Date,
         default: Date.now,
     },
-    clubposition:{
+    clubposition: {
         type: String,
-        // required: true
     },
-    clubselected:{
+    clubselected: {
         type: String,
         required: true
     },
-    teacherselected:{
-        type: "array",
-        // required: true
-    },
-    teacherapproved:{
+    teacherselected: {
         type: "array",
     },
-    teacherrejected:{
-        //type :String,
+    teacherapproved: {
         type: "array",
     },
-    status:{
+    teacherrejected: {
+        type: "array",
+    },
+    status: {
         type: String,
         default: "pending"
     },
-    memberStatus:{
-        type : Number,
-        default : 0,
+    memberStatus: {
+        type: Number,
+        default: 0,
     },
-    rejectedmessage:{
+    rejectedmessage: {
         type: String,
-        default : 'None',
+        default: 'None',
     },
     owner: {
         type: mongoose.Schema.Types.ObjectId,
@@ -46,12 +44,14 @@ const clubHeadFormSchema = mongoose.Schema({
 
 
 //memberStatus for admin 
-// 0 - default
-// 100 - request sent
-// 1 - member
-// 2 - authority User
+
+//  0 - default
+//  100 - request sent
+//  1 - member
+//  2 - authority User
 // -1 - rejected member
 // -2 - rejected authority User
-const clubHeadForm = mongoose.model("clubHeadForm", clubHeadFormSchema , "clubHeadsCollection");
+
+const clubHeadForm = mongoose.model("clubHeadForm", clubHeadFormSchema, "clubHeadsCollection");
 
 module.exports = clubHeadForm;
