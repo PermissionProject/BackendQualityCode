@@ -1,14 +1,9 @@
 const express = require("express");
 const router = express.Router();
 
-const bcrypt = require("bcryptjs");
-const {
-  ensureAuthenticated,
-  forwardAuthenticated,
-} = require("../../../config/auth");
+const { ensureAuthenticated } = require("../../../config/auth");
 
 // required for excel sheet
-var bodyParser = require("body-parser");
 var multer = require("multer");
 var xlstojson = require("xls-to-json-lc");
 var xlsxtojson = require("xlsx-to-json-lc");
@@ -17,18 +12,16 @@ var storage = multer.diskStorage({
   //multers disk storage settings
   destination: function (req, file, cb) {
     cb(null, __basedir + "/uploads");
-    // cb(null, __dirname.replace("admin", "") + "excelupload");
-    // path.join(__dirname, "../../public/uploads")
   },
   filename: function (req, file, cb) {
     var datetimestamp = Date.now();
     cb(
       null,
       file.fieldname +
-        "-" +
-        datetimestamp +
-        "." +
-        file.originalname.split(".")[file.originalname.split(".").length - 1]
+      "-" +
+      datetimestamp +
+      "." +
+      file.originalname.split(".")[file.originalname.split(".").length - 1]
     );
   },
 });
@@ -49,13 +42,10 @@ var upload = multer({
   },
 }).single("file");
 
+
+// route to upload and display the result
 router.post("/uploadreport", function (req, res) {
   var exceltojson;
-
-  var newusercount = 0;
-  var existingusercount = 0;
-  var newuserarray = [];
-  var existinguserarray = [];
 
   upload(req, res, function (err) {
     if (err) {
@@ -65,18 +55,14 @@ router.post("/uploadreport", function (req, res) {
     }
     /** Multer gives us file info in req.file object */
     if (!req.file) {
-      // res.json({ error_code: 1, err_desc: "No file passed" });
       res.render("admin/excelsheet/nofileuploaded.ejs", {
         user: req.user,
       });
       return;
     }
-    /** Check the extension of the incoming file and
-     *  use the appropriate module
-     */
     if (
       req.file.originalname.split(".")[
-        req.file.originalname.split(".").length - 1
+      req.file.originalname.split(".").length - 1
       ] === "xlsx"
     ) {
       exceltojson = xlsxtojson;
@@ -168,21 +154,6 @@ router.post("/uploadreport", function (req, res) {
               }
             });
           });
-
-          console.log("winnersdata");
-          console.log(winnersdata);
-
-          console.log("yearcount");
-          console.log(yearcount);
-
-          console.log("collegecount");
-          console.log(collegecount);
-
-          console.log("nontecheventscount");
-          console.log(nontecheventscount);
-
-          console.log("techeventscount");
-          console.log(techeventscount);
 
           res.render("admin/report/report.ejs", {
             winnersdata,
